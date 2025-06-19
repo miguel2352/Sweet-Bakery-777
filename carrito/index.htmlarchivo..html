@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sweet Bakery 777</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: url('logo.jpeg') no-repeat center center fixed; /* Usando 'logo.jpeg' como fondo */
+      background-size: cover;
+      padding-bottom: 80px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .jumbotron {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .producto-card {
+      margin-bottom: 30px;
+    }
+    .card {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border-radius: 1rem;
+    }
+    .carrito, .datos-cliente {
+      background: rgba(255,255,255,0.95);
+      border-radius: 1rem;
+      padding: 20px;
+      margin-top: 30px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .carrito ul li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+    }
+    .contador {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .quantity-controls button {
+      background: #eee;
+      border: none;
+      padding: 5px 10px;
+      font-size: 1.2rem;
+      border-radius: 10px;
+    }
+    .add-button {
+      background: linear-gradient(to right, #ff6a00, #ff9900);
+      border: none;
+      color: white;
+      padding: 10px;
+      font-weight: bold;
+      border-radius: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-4">
+    <div class="jumbotron text-center">
+      <h1 class="display-4">Sweet Bakery 777</h1>
+      <p class="lead">Selecciona tus productos favoritos y haz tu pedido por WhatsApp</p>
+    </div>
+
+    <div class="row" id="productos-container">
+      </div>
+
+    <div class="row">
+      <div class="col-md-6 carrito">
+        <h3>Carrito de Compras</h3>
+        <ul id="lista-carrito" class="list-group mb-3"></ul>
+        <p><strong>Total:</strong> $<span id="total">0</span></p>
+      </div>
+      <div class="col-md-6 datos-cliente">
+        <h3>Datos del Cliente</h3>
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre:</label>
+          <input type="text" id="nombre" class="form-control" placeholder="Tu nombre">
+        </div>
+        <div class="mb-3">
+          <label for="direccion" class="form-label">Dirección:</label>
+          <textarea id="direccion" class="form-control" rows="3" placeholder="Tu dirección"></textarea>
+        </div>
+        <button class="btn btn-success w-100" onclick="enviarPorWhatsApp()">Enviar por WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const productos = [
+      { id: 'berlinesaCajeta', nombre: 'Berlinesa de cajeta', precio: 15, imagen: 'berlinesa de cajeta.jpeg' },
+      { id: 'berlinesaChocolate', nombre: 'Berlinesa de chocolate', precio: 15, imagen: 'berlinesa de chocolate.jpeg' },
+      { id: 'berlinesaFresa', nombre: 'Berlinesa de fresa', precio: 15, imagen: 'berlinesa de fresa.jpeg' },
+      { id: 'berlinesaLeche', nombre: 'Berlinesa de leche', precio: 15, imagen: 'berlinesa de leche.jpeg' },
+      { id: 'donaAzucar', nombre: 'Dona de azucar', precio: 10, imagen: 'dona de azucar.jpeg' },
+      { id: 'donaCafe', nombre: 'Dona de cafe', precio: 12, imagen: 'dona de cafe.jpeg' },
+      { id: 'donaChocolate', nombre: 'Dona de chocolate', precio: 12, imagen: 'dona de chocolate.jpeg' },
+      { id: 'donaGlaseada', nombre: 'Dona glaseada', precio: 12, imagen: 'dona glaseada.jpeg' },
+    ];
+
+    const carrito = {}; // Objeto para almacenar los productos en el carrito: { idProducto: { nombre, precioUnitario, cantidad } }
+    let totalPrecio = 0;
+
+    // Función para renderizar los productos en la página
+    function crearProductos() {
+      const contenedor = document.getElementById("productos-container");
+      contenedor.innerHTML = ''; // Limpiar el contenedor antes de agregar los productos
+      productos.forEach(prod => {
+        // Inicializar la cantidad para cada producto en la vista del producto
+        const cantidadInicial = 1; // Siempre mostrar 1 al inicio en el control de cantidad del producto
+        
+        contenedor.innerHTML += `
+          <div class="col-md-4 producto-card">
+            <div class="card">
+              <img src="${prod.imagen}" class="card-img-top" alt="${prod.nombre}">
+              <div class="card-body text-center">
+                <h5 class="card-title">${prod.nombre}</h5>
+                <p class="card-text">Precio: $${prod.precio}</p>
+                <div class="quantity-controls">
+                  <button onclick="cambiarCantidadProducto(-1, '${prod.id}')">−</button>
+                  <span id="cantidad-prod-${prod.id}" style="margin: 0 15px;">${cantidadInicial}</span>
+                  <button onclick="cambiarCantidadProducto(1, '${prod.id}')">+</button>
+                </div>
+                <button class="add-button" onclick="agregarAlCarrito('${prod.id}')">
+                  Agregar <span>MX$<span id="precio-total-prod-${prod.id}">${prod.precio * cantidadInicial}</span></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Función para cambiar la cantidad de un producto en la vista del producto
+    function cambiarCantidadProducto(cambio, idProducto) {
+      const cantidadSpan = document.getElementById(`cantidad-prod-${idProducto}`);
+      let cantidadActual = parseInt(cantidadSpan.textContent);
+      cantidadActual = Math.max(1, cantidadActual + cambio);
+      cantidadSpan.textContent = cantidadActual;
+
+      const precioTotalSpan = document.getElementById(`precio-total-prod-${idProducto}`);
+      const producto = productos.find(p => p.id === idProducto);
+      precioTotalSpan.textContent = producto.precio * cantidadActual;
+    }
+
+    // Función para agregar o actualizar un producto en el carrito
+    function agregarAlCarrito(idProducto) {
+      const producto = productos.find(p => p.id === idProducto);
+      const cantidadSeleccionada = parseInt(document.getElementById(`cantidad-prod-${idProducto}`).textContent);
+
+      if (carrito[idProducto]) {
+        carrito[idProducto].cantidad += cantidadSeleccionada;
+      } else {
+        carrito[idProducto] = {
+          nombre: producto.nombre,
+          precioUnitario: producto.precio,
+          cantidad: cantidadSeleccionada
+        };
+      }
+      actualizarCarritoHTML();
+      // Restablecer la cantidad en la tarjeta del producto a 1 después de agregarlo al carrito
+      document.getElementById(`cantidad-prod-${idProducto}`).textContent = 1;
+      document.getElementById(`precio-total-prod-${idProducto}`).textContent = producto.precio;
+    }
+
+    // Función para cambiar la cantidad de un producto en el carrito
+    function cambiarCantidadCarrito(cambio, idProducto) {
+      if (carrito[idProducto]) {
+        carrito[idProducto].cantidad = Math.max(0, carrito[idProducto].cantidad + cambio);
+        if (carrito[idProducto].cantidad === 0) {
+          delete carrito[idProducto]; // Eliminar el producto si la cantidad llega a 0
+        }
+      }
+      actualizarCarritoHTML();
+    }
+
+    // Función para eliminar un producto del carrito
+    function eliminarProductoCarrito(idProducto) {
+      delete carrito[idProducto];
+      actualizarCarritoHTML();
+    }
+
+    // Función para actualizar la vista del carrito en el HTML
+    function actualizarCarritoHTML() {
+      const listaCarrito = document.getElementById("lista-carrito");
+      listaCarrito.innerHTML = ''; // Limpiar la lista antes de actualizar
+      totalPrecio = 0;
+
+      for (const idProducto in carrito) {
+        const item = carrito[idProducto];
+        const precioTotalItem = item.precioUnitario * item.cantidad;
+        totalPrecio += precioTotalItem;
+
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        li.innerHTML = `
+          <span>${item.nombre} x ${item.cantidad}</span>
+          <span>
+            $${precioTotalItem}
+            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="cambiarCantidadCarrito(-1, '${idProducto}')">−</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidadCarrito(1, '${idProducto}')">+</button>
+            <button class="btn btn-sm btn-danger ms-2" onclick="eliminarProductoCarrito('${idProducto}')">X</button>
+          </span>
+        `;
+        listaCarrito.appendChild(li);
+      }
+      document.getElementById("total").textContent = totalPrecio;
+    }
+
+    // Función para enviar el pedido por WhatsApp
+    function enviarPorWhatsApp() {
+      const nombre = document.getElementById("nombre").value;
+      const direccion = document.getElementById("direccion").value;
+      
+      if (!nombre || !direccion) {
+        alert("Por favor, ingresa tu nombre y dirección para completar el pedido.");
+        return;
+      }
+
+      if (Object.keys(carrito).length === 0) {
+        alert("Tu carrito está vacío. ¡Agrega algunos productos antes de enviar el pedido!");
+        return;
+      }
+
+      let mensaje = `¡Hola Sweet Bakery 777! Aquí tienes mi pedido:\n\n`;
+      mensaje += `*Nombre:* ${nombre}\n`;
+      mensaje += `*Dirección:* ${direccion}\n\n`;
+      mensaje += `*Productos:*\n`;
+
+      for (const idProducto in carrito) {
+        const item = carrito[idProducto];
+        mensaje += `- ${item.nombre} x ${item.cantidad} = $${item.precioUnitario * item.cantidad}\n`;
+      }
+
+      mensaje += `\n*Total a pagar:* $${totalPrecio}\n\n`;
+      mensaje += `¡Gracias por tu servicio!`;
+
+      // Reemplaza con el número de teléfono real de Sweet Bakery 777
+      // El formato debe ser código de país + número, sin el '+' inicial ni espacios.
+      // Por ejemplo, para México (código 52) y un número de 10 dígitos, sería 521234567890.
+      const numeroTelefono = "523112892287"; 
+      const url = `https://wa.me/${numeroTelefono}?text=${encodeURIComponent(mensaje)}`;
+      window.open(url, '_blank');
+    }
+
+    // Inicializar la página cargando los productos y actualizando el carrito
+    crearProductos();
+    actualizarCarritoHTML();
+  </script>
+</body>
+</html>
